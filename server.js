@@ -15,6 +15,9 @@ app.use(express.text({
     limit: '50mb'  // Adjust the limit as needed
 }));
 
+// Health check for the hosting platform
+app.get('/health', (req, res) => res.status(200).send('ok'));
+
 // GET endpoint for testing purposes
 app.get('/', (req, res) => {
     console.log('Received GET request');
@@ -28,13 +31,16 @@ function getHeadersAndUrl() {
         'User-Agent': 'Mozilla/5.0'
     };
 
-    const deploymentUrl = 'https://855722-sb2.extforms.netsuite.com/app/site/hosting/scriptlet.nl?script=1279&deploy=1&compid=855722_SB2&ns-at=AAEJ7tMQDD9Kd3DnWb6Kdqr9uBaUtGDAcv_ESIC9MtNz6aI7H40';
+    // External URL of customdeploy_punchout_order_suitelet (script 1279) in the target account.
+    // Override per environment with NETSUITE_SUITELET_URL; the default is the SB2 deployment.
+    const deploymentUrl = process.env.NETSUITE_SUITELET_URL
+        || 'https://855722-sb2.extforms.netsuite.com/app/site/hosting/scriptlet.nl?script=1279&deploy=1&compid=855722_SB2&ns-at=AAEJ7tMQDD9Kd3DnWb6Kdqr9uBaUtGDAcv_ESIC9MtNz6aI7H40';
 
     return { headers, deploymentUrl };
 }
 
 // POST endpoint to forward the XML data to the external Suitelet
-const NETSUITE_TIMEOUT_MS = 28000;
+const NETSUITE_TIMEOUT_MS = Number(process.env.NETSUITE_TIMEOUT_MS) || 28000;
 
 app.post('/', async (req, res) => {
     const { headers, deploymentUrl } = getHeadersAndUrl();
